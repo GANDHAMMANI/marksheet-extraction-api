@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Marksheet Extractor</title>
+<link rel="stylesheet" href="/static/style.css"/>
+
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <div class="modal-brand">
+      <div class="modal-brand-icon">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="modal-brand-name">Marksheet Extractor</div>
+        <div class="modal-brand-tag">AI-powered document intelligence</div>
+      </div>
+    </div>
+    <h2>Welcome back</h2>
+    <p class="modal-sub">Sign in to access the extraction portal</p>
+    <div class="fg">
+      <label>Username</label>
+      <input id="loginUser" type="text" placeholder="Enter your username" autocomplete="username"/>
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+    </div>
+    <button class="btn-primary" id="loginBtn">Sign in</button>
+    <div class="form-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-brand-icon">
+        <svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      Marksheet Extractor
+    </div>
+    <div class="tb-spacer"></div>
+    <span class="tb-user" id="tbUser"></span>
+    <button class="tb-logout" id="logoutBtn">Sign out</button>
+  </div>
+  <div class="workspace">
+
+    <!-- Upload -->
+    <div id="uploadScreen">
+      <div class="upload-card">
+        <div class="upload-icon-wrap">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 16 12 12 8 16"/>
+            <line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+          </svg>
+        </div>
+        <h2>Upload a marksheet</h2>
+        <p>Extract structured data from any board or university marksheet.<br/>Supports JPG, PNG, WEBP and PDF up to 10 MB.</p>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.pdf"/>
+          <div class="dz-text"><span>Click to browse</span> or drag & drop here</div>
+          <div class="dz-hint">JPG · PNG · WEBP · PDF · max 10 MB</div>
+        </div>
+        <div class="file-pill" id="filePill">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span id="pillName"></span>
+        </div>
+        <button class="btn-primary" id="extractBtn" disabled>Extract fields</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingScreen">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <h3>Extracting fields…</h3>
+        <div class="loading-msg" id="loadMsg">Preparing document…</div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="prog-pct" id="progPct">0%</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsScreen">
+      <div class="results-wrap">
+
+        <!-- Image panel -->
+        <div class="img-side">
+          <div class="img-side-bar">
+            <span id="imgFileName">Document</span>
+           
+            <span class="img-hint">← Click a field to highlight · agreed fields only · locations are Tesseract-derived</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="docCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Fields panel -->
+        <div class="fields-side">
+          <!-- Replace the fields-bar div content -->
+<div class="fields-bar">
+  <div class="fields-bar-left">
+    <div class="fields-title">Extracted Data</div>
+    <div class="fields-sub" id="fieldsSub"></div>
+  </div>
+  <div class="fields-bar-right">
+    <div style="display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-right:6px;">
+      <button id="viewFields" onclick="setView('fields')"
+        style="padding:5px 12px;font-size:.76rem;font-weight:600;border:none;cursor:pointer;
+               background:var(--primary);color:#fff;transition:all .15s;">Fields</button>
+      <button id="viewJson" onclick="setView('json')"
+        style="padding:5px 12px;font-size:.76rem;font-weight:600;border:none;cursor:pointer;
+               background:none;color:var(--muted);transition:all .15s;">JSON</button>
+    </div>
+    <span class="conf-badge" id="overallBadge"></span>
+    <button class="btn-new" id="newBtn">↩ New extraction</button>
+  </div>
+</div>
+          <div class="tabs" id="tabBar"></div>
+          <div class="fields-scroll" id="fieldsScroll"></div>
+          <div id="jsonView" style="display:none;flex:1;overflow:auto;padding:14px;background:#0f172a;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <span style="font-size:.72rem;color:#64748b;">Extracted JSON — copy and use directly</span>
+    <button id="copyBtn" onclick="copyJson()"
+      style="font-size:.75rem;padding:4px 12px;background:#1e293b;color:#94a3b8;
+             border:1px solid #334155;border-radius:6px;cursor:pointer;">Copy</button>
+  </div>
+  <pre id="jsonPre" style="font-size:.75rem;color:#e2e8f0;line-height:1.6;white-space:pre-wrap;word-break:break-word;"></pre>
+</div>
+          <div class="warn-section" id="warnSection" style="display:none;">
+            <div class="warn-head">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              Confidence warnings
+              <span class="warn-badge" id="warnCount"></span>
+            </div>
+            <div id="warnList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script src="/static/script.js"></script>
+</body>
+</html>
