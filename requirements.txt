@@ -4,15 +4,10 @@ pydantic
 pydantic-settings
 pyjwt
 python-multipart
-google-genai
 Pillow
 PyMuPDF
-pytest
-httpx2
 groq
-opendataloader-pdf[hybrid]
+openai
 opencv-python-headless
 numpy
-openai
 pytesseract
-opencv-python-headless
