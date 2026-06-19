@@ -32,4 +32,3 @@ async def extract_batch(
         else:
             results.append(BatchItemResult(filename=filename, success=True, data=outcome))
     return results
-#eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc4MTg2NTQwMX0.z27z8w_x2NgrP7JrvzcmFuHyKK5ctEVzzwq_dCnAtwA

@@ -13,6 +13,7 @@ _groq = AsyncGroq(api_key=settings.groq_api_key)
 _nvidia = AsyncOpenAI(
     api_key=settings.nvidia_api_key,
     base_url="https://integrate.api.nvidia.com/v1",
+    max_retries=0,
 )
 
 

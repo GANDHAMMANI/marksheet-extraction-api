@@ -9,6 +9,8 @@ from app.services.prompts import build_extraction_prompt
 
 logger = logging.getLogger(__name__)
 
+MINIMAX_TIMEOUT_SECONDS = 45
+
 
 async def extract_marksheet(content_type: str, file_bytes: bytes) -> MarksheetExtraction:
     file_handler.validate_file(content_type, file_bytes)
@@ -17,15 +19,21 @@ async def extract_marksheet(content_type: str, file_bytes: bytes) -> MarksheetEx
 
     logger.info("Starting extraction: %d page(s), content_type=%s", len(pages), content_type)
 
-    raw_scout, raw_minimax = await asyncio.gather(
-        llm_client.call_scout(pages, prompt),
-        llm_client.call_minimax(pages, prompt),
-    )
+    scout_task = asyncio.create_task(llm_client.call_scout(pages, prompt))
+    minimax_task = asyncio.create_task(llm_client.call_minimax(pages, prompt))
 
+    raw_scout = await scout_task
     scout_pass = _parse(raw_scout, "Scout")
-    minimax_pass = _parse(raw_minimax, "MiniMax")
 
-    result = confidence.merge_and_score(scout_pass, minimax_pass)
+    try:
+        raw_minimax = await asyncio.wait_for(minimax_task, timeout=MINIMAX_TIMEOUT_SECONDS)
+        minimax_pass = _parse(raw_minimax, "MiniMax")
+        result = confidence.merge_and_score(scout_pass, minimax_pass)
+    except (asyncio.TimeoutError, LLMExtractionError) as exc:
+        logger.warning("MiniMax unavailable (%s), falling back to Scout-only result", exc)
+        minimax_task.cancel()
+        result = confidence.merge_and_score(scout_pass, scout_pass)
+        result.warnings.append("MiniMax cross-validation unavailable for this request; result reflects Scout only")
 
     await asyncio.to_thread(bbox_locator.locate_fields, result, pages)
 
