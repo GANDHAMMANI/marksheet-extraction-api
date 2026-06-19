@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 
+from app.config import settings
 from app.core.exceptions import LLMExtractionError
 from app.schemas.marksheet import MarksheetExtraction
 from app.services import bbox_locator, confidence, file_handler, llm_client
@@ -35,7 +36,11 @@ async def extract_marksheet(content_type: str, file_bytes: bytes) -> MarksheetEx
         result = confidence.merge_and_score(scout_pass, scout_pass)
         result.warnings.append("MiniMax cross-validation unavailable for this request; result reflects Scout only")
 
-    await asyncio.to_thread(bbox_locator.locate_fields, result, pages)
+    if settings.enable_bbox_locator:
+        try:
+            await asyncio.to_thread(bbox_locator.locate_fields, result, pages)
+        except Exception as exc:
+            logger.warning("Bounding box location failed, continuing without it: %s", exc)
 
     logger.info("Extraction complete: document_confidence=%.3f, warnings=%d",
                 result.document_confidence, len(result.warnings))

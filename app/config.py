@@ -20,5 +20,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env")
 
+    enable_bbox_locator: bool = True
+
 
 settings = Settings()
