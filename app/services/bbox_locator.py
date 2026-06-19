@@ -35,15 +35,15 @@ def locate_fields(result, pages: list[Image.Image]) -> None:
 def _get_word_boxes(image: Image.Image) -> list[dict]:
     scale = 2.5
 
-    # convert to OpenCV grayscale
+    
     cv_img = cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2GRAY)
 
-    # scale up — gives Tesseract significantly more pixels to work with
+   
     new_w = int(cv_img.shape[1] * scale)
     new_h = int(cv_img.shape[0] * scale)
     cv_img = cv2.resize(cv_img, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
 
-    # adaptive threshold handles uneven lighting from photographed docs
+    
     cv_img = cv2.adaptiveThreshold(
         cv_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10
     )
@@ -62,7 +62,7 @@ def _get_word_boxes(image: Image.Image) -> list[dict]:
         text = data["text"][i].strip()
         conf = int(data["conf"][i])
         if text and conf > 0:
-            # scale coordinates back to original image dimensions
+           
             boxes.append({
                 "text": text,
                 "x": int(data["left"][i] / scale),
@@ -86,9 +86,9 @@ def _walk(obj, word_boxes, img_w, img_h):
         for item in obj:
             _walk(item, word_boxes, img_w, img_h)
         return
-    # use Pydantic v2's model_fields rather than vars() which is unreliable
+    
     if isinstance(obj, PydanticBase):
-        for field_name in obj.model_fields:
+        for field_name in type(obj).model_fields:
             _walk(getattr(obj, field_name, None), word_boxes, img_w, img_h)
 
 
@@ -128,7 +128,7 @@ def _search(words: list[str], word_boxes: list[dict], img_w: int, img_h: int) ->
                 return _norm(b["x"], b["y"], b["x"] + b["w"], b["y"] + b["h"], img_w, img_h)
         return None
 
-    # exact contiguous sequence
+   
     for start in range(len(word_boxes) - len(words) + 1):
         if all(_match(texts[start + j], words[j]) for j in range(len(words))):
             group = word_boxes[start: start + len(words)]
@@ -138,7 +138,7 @@ def _search(words: list[str], word_boxes: list[dict], img_w: int, img_h: int) ->
                 img_w, img_h,
             )
 
-    # greedy fallback: anchor on first two words then extend
+    
     if len(words) >= 3:
         for start in range(len(word_boxes) - 1):
             if _match(texts[start], words[0]) and _match(texts[start + 1], words[1]):

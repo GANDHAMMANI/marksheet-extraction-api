@@ -32,9 +32,6 @@ Scout has a consistent failure on staggered table rows: it transposes adjacent
 subjects confidently, with no self-doubt. MiniMax resolved this in testing. So both
 run on every request and their outputs get compared.
 
-I checked several other options: Maverick was deprecated, Llama 3.2 Vision
-decommissioned, Qwen3-VL gated behind enterprise access. MiniMax was the only
-genuinely different vision model accessible without a sales call.
 
 ## Confidence scoring
 

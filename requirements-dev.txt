@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+pyjwt
+python-multipart
+google-genai
+Pillow
+PyMuPDF
+pytest
+httpx2
+groq
+opendataloader-pdf[hybrid]
+opencv-python-headless
+numpy
+openai
+pytesseract

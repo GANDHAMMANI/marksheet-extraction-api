@@ -35,3 +35,42 @@ app.include_router(health.router, tags=["health"])
 @app.get("/", include_in_schema=False)
 async def serve_demo():
     return FileResponse(str(STATIC_DIR / "index.html"))
+
+from fastapi.openapi.utils import get_openapi
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+
+    # Swagger UI doesn't render array-of-binary fields correctly under
+    # OpenAPI 3.1's contentMediaType convention — patch them to the
+    # older format:binary convention it actually understands
+    for path_item in schema.get("paths", {}).values():
+        for operation in path_item.values():
+            request_body = operation.get("requestBody", {})
+            content = request_body.get("content", {})
+            multipart = content.get("multipart/form-data", {})
+            body_schema_ref = multipart.get("schema", {}).get("$ref")
+            if not body_schema_ref:
+                continue
+            schema_name = body_schema_ref.split("/")[-1]
+            body_schema = schema.get("components", {}).get("schemas", {}).get(schema_name, {})
+            for prop in body_schema.get("properties", {}).values():
+                if prop.get("type") == "array" and "contentMediaType" in prop.get("items", {}):
+                    prop["items"] = {"type": "string", "format": "binary"}
+                elif "contentMediaType" in prop:
+                    prop["format"] = "binary"
+                    prop.pop("contentMediaType", None)
+
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi

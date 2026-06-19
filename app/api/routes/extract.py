@@ -1,7 +1,6 @@
 import asyncio
 
-from fastapi import APIRouter, Depends, UploadFile
-
+from fastapi import APIRouter, Depends, File, UploadFile
 from app.api.deps import get_current_user
 from app.schemas.marksheet import BatchItemResult, MarksheetExtraction
 from app.services.extraction import extract_marksheet
@@ -16,7 +15,10 @@ async def extract_single(file: UploadFile, _user: str = Depends(get_current_user
 
 
 @router.post("/extract/batch", response_model=list[BatchItemResult])
-async def extract_batch(files: list[UploadFile], _user: str = Depends(get_current_user)) -> list[BatchItemResult]:
+async def extract_batch(
+    files: list[UploadFile] = File(...),
+    _user: str = Depends(get_current_user)
+) -> list[BatchItemResult]:
     uploads = [(f.filename, f.content_type, await f.read()) for f in files]
     outcomes = await asyncio.gather(
         *(extract_marksheet(content_type, data) for _, content_type, data in uploads),
@@ -30,3 +32,4 @@ async def extract_batch(files: list[UploadFile], _user: str = Depends(get_curren
         else:
             results.append(BatchItemResult(filename=filename, success=True, data=outcome))
     return results
+#eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc4MTg2NTQwMX0.z27z8w_x2NgrP7JrvzcmFuHyKK5ctEVzzwq_dCnAtwA
